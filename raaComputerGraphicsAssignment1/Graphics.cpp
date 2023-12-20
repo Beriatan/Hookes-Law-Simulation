@@ -10,13 +10,11 @@
 #include <raaCamera/raaCamera.h>
 #include <raaUtilities/raaUtilities.h>
 #include <raaMaths/raaMaths.h>
-#include <raaMaths/raaVector.h>
-#include <raaSystem/raaSystem.h>
-#include <raaPajParser/raaPajParser.h>
 #include <raaText/raaText.h>
 #include "raaSystem/raaSystem.h"
-#include "raaConstants.h"
 #include "Config.h"
+#include "raaConstants.h"
+
 
 extern raaConfig g_Config;
 extern raaStatus g_Status;
@@ -33,6 +31,16 @@ GLfloat afColours[][4] = {
 	{0.0f, 1.0f, 1.0f, 1.0f}, // 5 - Cyan - South America
 	{1.0f, 1.0f, 1.0f, 1.0f} // 6 - White 
 };
+
+void printPause()
+{
+	if (g_Status.m_bIsSimulationRunning) {
+		printf("Simulation running\n");
+	}
+	else {
+		printf("Simulation paused\n");
+	}
+}
 
 
 void nodeDisplay(raaNode* pNode) {
@@ -191,3 +199,4 @@ void renderHUD() {
 	// Switch back to modelview matrix
 	glMatrixMode(GL_MODELVIEW);
 }
+
