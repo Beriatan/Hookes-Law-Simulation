@@ -28,6 +28,7 @@ raaNode* initNode(raaNode* pNode, unsigned int uiId, float* pfPosition, float fM
 			pNode->m_afVelocity[i] = 0.0f;
 			pNode->m_afAccumulatedForce[i] = 0.0f;
 		}
+		pNode->m_bHighlighted = false;
 
 	}
 

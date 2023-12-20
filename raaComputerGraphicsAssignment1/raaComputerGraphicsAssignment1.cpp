@@ -7,7 +7,6 @@
 #include <iostream>
 #include <vector>
 
-
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -20,6 +19,9 @@
 #include <raaPajParser/raaPajParser.h>
 #include <raaText/raaText.h>
 #include "raaSystem/raaSystem.h"
+#include "raaConstants.h"
+#include "Config.h"
+//#include "Graphics.h"
 
 
 #include "raaConstants.h"
@@ -35,36 +37,40 @@
 
 // core system global data
 raaCameraInput g_Input; // structure to hadle input to the camera comming from mouse/keyboard events
-raaCamera g_Camera; // structure holding the camera position and orientation attributes
 raaSystem g_System; // data structure holding the imported graph of data - you may need to modify and extend this to support your functionallity
 raaControl g_Control; // set of flag controls used in my implmentation to retain state of key actions
+raaCamera g_Camera; // structure holding the camera position and orientation attributes
+extern raaConfig g_Config;
+extern raaStatus g_Status;
 
-// global var: parameter name for the file to load
-const static char csg_acFileParam[] = {"-input"};
+//bool g_bIsSimulationRunning = false; //global variable to control the simulation state
+//float g_fSimulationKineticEnergy = 0.0f;;
+//float g_fSimulationSpeedMultiplier = 1.0f;
+//float g_fDampingFactor = 0.97f;
+//float g_fBaseDampingFactor = g_fDampingFactor;
 
-// global var: file to load data from
-char g_acFile[256];
-bool g_bIsSimulationRunning = false; //global variable to control the simulation state
-float g_fSimulationKineticEnergy = 0.0f;;
+float g_fMouseWorldX = 0.0f;
+float g_fMouseWorldY = 0.0f;
+float g_fMouseWorldZ = 0.0f;
 
 LARGE_INTEGER frequency;
 LARGE_INTEGER lastFrameTime;
-float g_deltaTime = 0.0f; // Time it takes for the program to tick. Calculated when idle
-float g_fSimulationSpeedMultiplier = 1.0f;
-const float g_fDefaultSimulationSpeed = 0.8f;
-float g_fDampingFactor = 0.97f;
-float g_fBaseDampingFactor = g_fDampingFactor;
+//float g_deltaTime = 0.0f; // Time it takes for the program to tick. Calculated when idle
 
-
-GLfloat afContinentColors[][4] = {
-	{1.0f, 0.0f, 0.0f, 1.0f}, // Red - Africa
-	{0.0f, 1.0f, 0.0f, 1.0f}, // Green - Asia
-	{0.0f, 0.0f, 1.0f, 1.0f}, // Blue - Europe
-	{1.0f, 1.0f, 0.0f, 1.0f}, // Yellow - North America
-	{1.0f, 0.0f, 1.0f, 1.0f}, // Magenta - Oceania
-	{0.0f, 1.0f, 1.0f, 1.0f}  // Cyan - South America
-	// Add more colors if needed
+GLfloat afColours[][4] = {
+	{1.0f, 0.0f, 0.0f, 1.0f}, // 0 - Red - Africa
+	{0.0f, 1.0f, 0.0f, 1.0f}, // 1 - Green - Asia
+	{0.0f, 0.0f, 1.0f, 1.0f}, // 2 -  Blue - Europe
+	{1.0f, 1.0f, 0.0f, 1.0f}, // 3 - Yellow - North America
+	{1.0f, 0.0f, 1.0f, 1.0f}, // 4 - Magenta - Oceania
+	{0.0f, 1.0f, 1.0f, 1.0f}, // 5 - Cyan - South America
+	{1.0f, 1.0f, 1.0f, 1.0f} // 6 - White 
 };
+
+// global var: parameter name for the file to load
+const static char csg_acFileParam[] = { "-input" };
+// global var: file to load data from
+char g_acFile[256];
 
 
 
@@ -81,11 +87,10 @@ void motion(int iXPos, int iYPos); // called for each mouse motion event
 
 // Non glut functions
 void myInit(); // the myinit function runs once, before rendering starts and should be used for setup
-void nodeDisplay(raaNode *pNode); // callled by the display function to draw nodes
-void arcDisplay(raaArc *pArc); // called by the display function to draw arcs
 void buildGrid(); // 
 void printPause(); //Outputs the running status of the simulation to the console
-
+void nodeDisplay(raaNode* pNode); // callled by the display function to draw nodes
+void arcDisplay(raaArc* pArc); // called by the display function to draw arcs
 
 void calculateCuboidDimensions(int totalNodes, int* dimensions) {
 	int baseDimension = (int)round(pow((double)totalNodes, 1.0 / 3.0));
@@ -191,7 +196,6 @@ void randomizeNodePositions(raaSystem* pSystem, float fMinRange, float fMaxRange
 	}
 }
 
-
 void nodeDisplay(raaNode* pNode) {
 	float* position = pNode->m_afPosition;
 	unsigned int continent = pNode->m_uiContinent;
@@ -200,13 +204,19 @@ void nodeDisplay(raaNode* pNode) {
 	glPushMatrix();
 	glPushAttrib(GL_ALL_ATTRIB_BITS);
 
-	// Set color based on continent
-	if (continent > 0 && continent <= 6) {
-		utilitiesColourToMat(afContinentColors[continent - 1], 2.0f, true);
+	// Check if the node is highlighted
+	if (pNode->m_bHighlighted) {
+		utilitiesColourToMat(afColours[6], 2.0f, true);
 	}
 	else {
-		GLfloat defaultColor[] = { 0.5f, 0.5f, 0.5f, 1.0f }; // Grey for unknown continent
-		utilitiesColourToMat(defaultColor, 2.0f, true);
+		// Set color based on continent
+		if (continent > 0 && continent <= 6) {
+			utilitiesColourToMat(afColours[continent - 1], 2.0f, true);
+		}
+		else {
+			GLfloat defaultColor[] = { 0.5f, 0.5f, 0.5f, 1.0f }; // Grey for unknown continent
+			utilitiesColourToMat(defaultColor, 2.0f, true);
+		}
 	}
 
 	glTranslated(position[0], position[1], position[2]);
@@ -219,19 +229,17 @@ void nodeDisplay(raaNode* pNode) {
 	case 2:
 		glutSolidCube(mathsDimensionOfCubeFromVolume(pNode->m_fMass)); // Cube
 		break;
-	case 3:
-		{
-			float coneVolume = pNode->m_fMass;
-			float coneRadius = mathsRadiusOfConeFromVolume(coneVolume);
-			float coneHeight = (3.0f * coneVolume) / (M_PI * coneRadius * coneRadius);
-			glutSolidCone(coneRadius, coneHeight, 15, 15); // Cone
-		}
-		break;
+	case 3: {
+		float coneVolume = pNode->m_fMass;
+		float coneRadius = mathsRadiusOfConeFromVolume(coneVolume);
+		float coneHeight = (3.0f * coneVolume) / (M_PI * coneRadius * coneRadius);
+		glutSolidCone(coneRadius, coneHeight, 15, 15); // Cone
+	}
+		  break;
 	default:
 		glutSolidSphere(mathsRadiusOfSphereFromVolume(pNode->m_fMass), 15, 15); // Default to sphere
 		break;
 	}
-
 
 	glMultMatrixf(camRotMatInv(g_Camera));
 	// Render the node's name
@@ -242,6 +250,7 @@ void nodeDisplay(raaNode* pNode) {
 	glPopMatrix();
 	glPopAttrib();
 }
+
 
 
 void arcDisplay(raaArc* pArc) {
@@ -262,7 +271,7 @@ void arcDisplay(raaArc* pArc) {
 	glDisable(GL_LIGHTING);
 	glBegin(GL_LINES);
 	if (flowDirection) {
-		
+
 		glColor3fv(brightGreen);
 		glVertex3fv(arcPos1);
 		glColor3fv(red);
@@ -278,71 +287,72 @@ void arcDisplay(raaArc* pArc) {
 }
 
 void renderHUD() {
-    // Save the current OpenGL states
-    glPushAttrib(GL_ALL_ATTRIB_BITS);
+	// Save the current OpenGL states
+	glPushAttrib(GL_ALL_ATTRIB_BITS);
 
-    // Save the current projection matrix and set up an orthogonal projection
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
+	// Save the current projection matrix and set up an orthogonal projection
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadIdentity();
 
-    int width = glutGet(GLUT_WINDOW_WIDTH);
-    int height = glutGet(GLUT_WINDOW_HEIGHT);
-    gluOrtho2D(0, width, 0, height);
+	int width = glutGet(GLUT_WINDOW_WIDTH);
+	int height = glutGet(GLUT_WINDOW_HEIGHT);
+	gluOrtho2D(0, width, 0, height);
 
-    // Switch to modelview matrix and save it
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
+	// Switch to modelview matrix and save it
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glLoadIdentity();
 
-    // Disable depth testing for HUD rendering
-    glDisable(GL_DEPTH_TEST);
-    
-    // Display simulation control text
-    char controlText[256];
-    sprintf_s(controlText, "Press P to %s the simulation", g_bIsSimulationRunning ? "pause" : "play");
-    glRasterPos2i(10, height - 20);
-    for (char* c = controlText; *c != '\0'; c++) {
-        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *c);
-    }
+	// Disable depth testing for HUD rendering
+	glDisable(GL_DEPTH_TEST);
 
-    // Display kinetic energy
-    char energyText[256];
-    sprintf_s(energyText, "Total Kinetic Energy: %.2f Joules", g_fSimulationKineticEnergy);
-    glRasterPos2i(10, height - 40);
-    for (char* c = energyText; *c != '\0'; c++) {
-        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *c);
-    }
+	// Display simulation control text
+	char controlText[256];
+	sprintf_s(controlText, "Press P to %s the simulation", g_Status.m_bIsSimulationRunning ? "pause" : "play");
+	glRasterPos2i(10, height - 20);
+	for (char* c = controlText; *c != '\0'; c++) {
+		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *c);
+	}
+
+	// Display kinetic energy
+	char energyText[256];
+	sprintf_s(energyText, "Total Kinetic Energy: %.2f Joules", g_Status.m_fSimulationKineticEnergy);
+	glRasterPos2i(10, height - 40);
+	for (char* c = energyText; *c != '\0'; c++) {
+		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *c);
+	}
 
 	// Display Speed multiplier
 	char multiplierText[256];
-	sprintf_s(multiplierText, "Speed multiplier: %.2fX", 1/g_fSimulationSpeedMultiplier);
-	glRasterPos2i(10, height - 60); 
+	sprintf_s(multiplierText, "Speed multiplier: %.2fX", 1 / g_Config.m_fSimulationSpeedMultiplier);
+	glRasterPos2i(10, height - 60);
 	for (char* c = multiplierText; *c != '\0'; c++) {
 		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *c);
 	}
 
 	// Display Damping Factor
 	char dampingFactorText[256];
-	sprintf_s(dampingFactorText, "Damping factor: %.2fX, base: %.2f", g_fDampingFactor, g_fBaseDampingFactor);
+	sprintf_s(dampingFactorText, "Damping factor: %.2fX, base: %.2f", g_Config.m_fDampingFactor , g_Config.m_fBaseDampingFactor);
 	glRasterPos2i(10, height - 80);
 	for (char* c = dampingFactorText; *c != '\0'; c++) {
 		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *c);
 	}
 
-    // Restore the modelview matrix
-    glPopMatrix();
+	// Restore the modelview matrix
+	glPopMatrix();
 
-    // Restore the projection matrix
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
+	// Restore the projection matrix
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
 
-    // Restore the saved OpenGL states
-    glPopAttrib();
+	// Restore the saved OpenGL states
+	glPopAttrib();
 
-    // Switch back to modelview matrix
-    glMatrixMode(GL_MODELVIEW);
+	// Switch back to modelview matrix
+	glMatrixMode(GL_MODELVIEW);
 }
+
 
 float calculateTotalKineticEnergy(raaSystem* pSystem) {
 	float totalKineticEnergy = 0.0f;
@@ -379,33 +389,35 @@ static void applyForceToNode(raaNode* pNode, float forceX, float forceY, float f
 	float az = forceZ / pNode->m_fMass;
 
 	// Base damping factor
-	g_fDampingFactor = g_fBaseDampingFactor;
+	g_Config.m_fDampingFactor = g_Config.m_fBaseDampingFactor;
 
 	// Define a threshold for kinetic energy
 	float kineticEnergyThreshold = 40000000000000.0f;
 
 	// If kinetic energy is above the threshold, decrease damping exponentially
-	if (g_fSimulationKineticEnergy > kineticEnergyThreshold) {
+	if (g_Status.m_fSimulationKineticEnergy > kineticEnergyThreshold) {
 		float exponentFactor = 0.05f; // Control how quickly damping decreases
-		g_fDampingFactor -= exponentFactor * (g_fSimulationKineticEnergy - kineticEnergyThreshold);
+		g_Config.m_fDampingFactor -= exponentFactor * (g_Status.m_fSimulationKineticEnergy - kineticEnergyThreshold);
 	}
 
 	// Ensure dampingFactor doesn't go negative
-	g_fDampingFactor = max(0.0f, g_fDampingFactor);
+	
+	g_Config.m_fDampingFactor = max(0.0f, g_Config.m_fDampingFactor);
 
-	pNode->m_afVelocity[0] *= g_fDampingFactor;
-	pNode->m_afVelocity[1] *= g_fDampingFactor;
-	pNode->m_afVelocity[2] *= g_fDampingFactor;
+
+	pNode->m_afVelocity[0] *= g_Config.m_fDampingFactor;
+	pNode->m_afVelocity[1] *= g_Config.m_fDampingFactor;
+	pNode->m_afVelocity[2] *= g_Config.m_fDampingFactor;
 
 	// Update velocity (v = v + a * deltaTime)
-	pNode->m_afVelocity[0] += ax * g_deltaTime;
-	pNode->m_afVelocity[1] += ay * g_deltaTime;
-	pNode->m_afVelocity[2] += az * g_deltaTime;
+	pNode->m_afVelocity[0] += ax * g_Status.m_fDeltaTime;
+	pNode->m_afVelocity[1] += ay * g_Status.m_fDeltaTime;
+	pNode->m_afVelocity[2] += az * g_Status.m_fDeltaTime;
 
 	// Update position (p = p + v * deltaTime)
-	pNode->m_afPosition[0] += pNode->m_afVelocity[0] * g_deltaTime;
-	pNode->m_afPosition[1] += pNode->m_afVelocity[1] * g_deltaTime;
-	pNode->m_afPosition[2] += pNode->m_afVelocity[2] * g_deltaTime;
+	pNode->m_afPosition[0] += pNode->m_afVelocity[0] * g_Status.m_fDeltaTime;
+	pNode->m_afPosition[1] += pNode->m_afVelocity[1] * g_Status.m_fDeltaTime;
+	pNode->m_afPosition[2] += pNode->m_afVelocity[2] * g_Status.m_fDeltaTime;
 }
 
 void applyAccumulatedForces(raaNode* pNode) {
@@ -481,6 +493,10 @@ void updateCameraToCenterOfMass(raaSystem* pSystem, raaCamera* pCamera) {
 	}
 }
 
+float g_fOrigin[3] = { 0.0f,0.0f,0.0f };
+float g_fDirection[3] = { 0.0f,0.0f,0.0f };
+
+
 
 
 // draw the scene. Called once per frame and should only deal with scene drawing (not updating the simulator)
@@ -522,7 +538,7 @@ void idle()
 	// Calculate the ticker time, so we can modify the distance of each object based on velocity
 	LARGE_INTEGER currentTime;
 	QueryPerformanceCounter(&currentTime);
-	g_deltaTime = static_cast<float>(currentTime.QuadPart - lastFrameTime.QuadPart) / (frequency.QuadPart * g_fSimulationSpeedMultiplier);
+	g_Status.m_fDeltaTime = static_cast<float>(currentTime.QuadPart - lastFrameTime.QuadPart) / (frequency.QuadPart * g_Config.m_fSimulationSpeedMultiplier);
 	lastFrameTime = currentTime;
 
 	controlChangeResetAll(g_Control); // re-set the update status for all of the control flags
@@ -530,13 +546,13 @@ void idle()
 	camResetViewportChanged(g_Camera); // re-set the camera's viwport changed flag after all events have been processed
 
 	// Check if the simulation is running
-	if (g_bIsSimulationRunning) {
+	if (g_Status.m_bIsSimulationRunning) {
 		// Calculate spring forces and accumulate them on nodes
 		visitArcs(&g_System, calculateSpringForce);
 
 		// Apply accumulated forces to nodes and reset them
 		visitNodes(&g_System, applyAccumulatedForces);
-		g_fSimulationKineticEnergy = calculateTotalKineticEnergy(&g_System);
+		g_Status.m_fSimulationKineticEnergy = calculateTotalKineticEnergy(&g_System);
 	}
 
 	glutPostRedisplay();// ask glut to update the screen
@@ -567,7 +583,7 @@ void keyboard(unsigned char c, int iXPos, int iYPos)
 		camInputTravel(g_Input, tri_neg); // mouse zoom
 		break;
 	case 'p':
-		g_bIsSimulationRunning = !g_bIsSimulationRunning;
+		g_Status.m_bIsSimulationRunning = !g_Status.m_bIsSimulationRunning;
 		printPause();
 		break;
 	case 'c':
@@ -618,43 +634,194 @@ void sKeyboardUp(int iC, int iXPos, int iYPos)
 	}
 }
 
-void mouse(int iKey, int iEvent, int iXPos, int iYPos)
-{
-	// capture the mouse events for the camera motion and record in the current mouse input state
-	if (iKey == GLUT_LEFT_BUTTON)
-	{
-		camInputMouse(g_Input, (iEvent == GLUT_DOWN) ? true : false);
-		if (iEvent == GLUT_DOWN)camInputSetMouseStart(g_Input, iXPos, iYPos);
+raaNode* g_pSelectedNode = nullptr; // Global pointer to store the selected node
+
+bool raySphereIntersect(const float* rayOrigin, const float* rayDir, const raaNode& node, float radius, float& t) {
+	float v[3];
+	vecSub(const_cast<float*>(node.m_afPosition), const_cast<float*>(rayOrigin), v); 
+	float b = vecDotProduct(const_cast<float*>(v), const_cast<float*>(rayDir));
+	float vDotV = vecDotProduct(const_cast<float*>(v), const_cast<float*>(v));
+	float det = (b * b) - vDotV + (radius * radius);
+
+	if (det < 0) {
+		return false;
 	}
-	else if (iKey == GLUT_MIDDLE_BUTTON)
-	{
-		camInputMousePan(g_Input, (iEvent == GLUT_DOWN) ? true : false);
-		if (iEvent == GLUT_DOWN)camInputSetMouseStart(g_Input, iXPos, iYPos);
+
+	det = sqrtf(det);
+	t = b - det;  // Closest intersection
+
+	return t >= 0; // Check if intersection is in the positive ray direction
+}
+
+raaNode* findClosestIntersectedNode(const float* rayOrigin, const float* rayDir, raaLinkedList* pList, float radius) {
+	raaNode* closestNode = nullptr;
+	float minT = FLT_MAX;
+
+	for (raaLinkedListElement* pElement = head(pList); pElement != NULL; pElement = pElement->m_pNext) {
+		raaNode* pNode = static_cast<raaNode*>(pElement->m_pData);
+		float t;
+		if (raySphereIntersect(rayOrigin, rayDir, *pNode, radius, t)) {
+			if (t < minT) {
+				minT = t;
+				closestNode = pNode;
+			}
+		}
+	}
+
+	return closestNode;
+}
+
+void selectNode(int iXPos, int iYPos, raaLinkedList* pList, float radius) {
+	// Similar to the hover function, but stores the selected node globally
+	// ... existing hover function code ...
+
+	g_pSelectedNode = findClosestIntersectedNode(g_fOrigin, g_fDirection, pList, 20.0f);
+
+	// Highlight the selected node
+	if (g_pSelectedNode) {
+		g_pSelectedNode->m_bHighlighted = true;
 	}
 }
 
-void motion(int iXPos, int iYPos)
-{
-	// if mouse is in a mode that tracks motion pass this to the camera model
-	if(g_Input.m_bMouse || g_Input.m_bMousePan) camInputSetMouseLast(g_Input, iXPos, iYPos);
+void dragNode(int iXPos, int iYPos) {
+    if (g_pSelectedNode) {
+        int viewport[4];
+        glGetIntegerv(GL_VIEWPORT, viewport);
+        int adjustedYPos = viewport[3] - iYPos;
+
+        float nearPlaneWorldCoords[3], farPlaneWorldCoords[3];
+        renderUnProject((float)iXPos, (float)adjustedYPos, 0.0f, camObjMat(g_Camera), g_Camera.m_afProjMat, camViewport(g_Camera), nearPlaneWorldCoords);
+        renderUnProject((float)iXPos, (float)adjustedYPos, 1.0f, camObjMat(g_Camera), g_Camera.m_afProjMat, camViewport(g_Camera), farPlaneWorldCoords);
+
+        float rayDir[3];
+        vecSub(farPlaneWorldCoords, nearPlaneWorldCoords, rayDir);
+        vecNormalise(rayDir, rayDir);
+
+        // Plane normal is the negative of camera view direction
+        float planeNormal[3];
+        memcpy(planeNormal, g_Camera.m_fVD, sizeof(float) * 3);
+        vecScalarProduct(planeNormal, -1.0f, planeNormal); // Reverse the direction
+
+        float planePoint[3];
+        memcpy(planePoint, g_pSelectedNode->m_afPosition, sizeof(float) * 3); 
+
+        float v[3];
+        vecSub(planePoint, g_Camera.m_fVP, v);
+        float numerator = vecDotProduct(planeNormal, v);
+        float denominator = vecDotProduct(planeNormal, rayDir);
+        
+        if (denominator != 0) {
+            float t = numerator / denominator;
+            float newPosition[3];
+            vecScalarProduct(rayDir, t, newPosition);
+            vecAdd(g_Camera.m_fVP, newPosition, newPosition);
+
+            memcpy(g_pSelectedNode->m_afPosition, newPosition, sizeof(float) * 3);
+        }
+    }
 }
+
+
+
+
+void releaseNode() {
+	g_pSelectedNode = nullptr;
+}
+
+
+
+
+void mouse(int iKey, int iEvent, int iXPos, int iYPos) {
+	if (iKey == GLUT_LEFT_BUTTON) {
+		if (iEvent == GLUT_DOWN) {
+			// Select node on left button press
+			selectNode(iXPos, iYPos, &(g_System.m_llNodes), 20.0f);
+		}
+		else if (iEvent == GLUT_UP) {
+			// Release the node on left button release
+			releaseNode();
+		}
+	}
+	else if (iKey == GLUT_MIDDLE_BUTTON) {
+		camInputMousePan(g_Input, (iEvent == GLUT_DOWN));
+		if (iEvent == GLUT_DOWN) camInputSetMouseStart(g_Input, iXPos, iYPos);
+	}
+
+	// Existing camera control code
+	if (!g_pSelectedNode) { // Only control camera if no node is selected
+		camInputMouse(g_Input, (iEvent == GLUT_DOWN));
+		if (iEvent == GLUT_DOWN) camInputSetMouseStart(g_Input, iXPos, iYPos);
+	}
+}
+
+
+void motion(int iXPos, int iYPos) {
+	if (g_pSelectedNode) {
+		// Drag node if one is selected
+		dragNode(iXPos, iYPos);
+	}
+	else {
+		// Update camera movement if no node is selected
+		if (g_Input.m_bMouse || g_Input.m_bMousePan) camInputSetMouseLast(g_Input, iXPos, iYPos);
+	}
+}
+
+
+void hover(int iXPos, int iYPos) {
+	// Near plane
+	float nearPlaneWorldCoords[3];
+	int viewport[4];
+	glGetIntegerv(GL_VIEWPORT, viewport); // Get the current viewport
+	int adjustedYPos = viewport[3] - iYPos;
+	
+	renderUnProject((float)iXPos, (float)adjustedYPos, 0.0f, camObjMat(g_Camera), g_Camera.m_afProjMat, camViewport(g_Camera), nearPlaneWorldCoords);
+
+	// Far plane
+	float farPlaneWorldCoords[3];
+	renderUnProject((float)iXPos, (float)adjustedYPos, 1.0f, camObjMat(g_Camera), g_Camera.m_afProjMat, camViewport(g_Camera), farPlaneWorldCoords);
+
+	// Ray direction (normalized)
+	float rayDir[3];
+	vecSub(farPlaneWorldCoords, nearPlaneWorldCoords, rayDir);
+	vecNormalise(rayDir, rayDir);
+	memcpy(g_fOrigin, nearPlaneWorldCoords, 3 * sizeof(float));
+	memcpy(g_fDirection, rayDir, 3 * sizeof(float));
+
+	raaNode* selectedNode = findClosestIntersectedNode(g_fOrigin, g_fDirection, &(g_System.m_llNodes), 20.0f);
+	
+	// Reset highlighting for all nodes
+	for (raaLinkedListElement* pElement = head(&(g_System.m_llNodes)); pElement != NULL; pElement = pElement->m_pNext) {
+		raaNode* pNode = static_cast<raaNode*>(pElement->m_pData);
+		pNode->m_bHighlighted = false;
+	}
+
+	// Highlight the selected node
+	if (selectedNode) {
+		selectedNode->m_bHighlighted = true;
+	}
+
+
+	// Now you have the ray originating from 'nearPlaneWorldCoords' in the direction 'rayDir'
+	// Next step is to check for intersection with objects (nodes) in your scene
+}
+
 
 void sortSubmenuAction(int option) {
 	switch (option) {
 	case 1:
-		g_bIsSimulationRunning = false;
+		g_Status.m_bIsSimulationRunning = false;
 		arrangeNodesInCuboid(); // Assuming 50 is the desired spacing
 		break;
 	case 2:
-		g_bIsSimulationRunning = true;
-		randomizeNodePositions(&g_System, 0.0001, 0.002f);
-		g_bIsSimulationRunning = false;
+		g_Status.m_bIsSimulationRunning = true;
+		randomizeNodePositions(&g_System, 0.0001f, 0.002f);
+		g_Status.m_bIsSimulationRunning = false;
 		arrangeNodesInLine();
 		break;
 	case 3:
-		g_bIsSimulationRunning = true;
-		randomizeNodePositions(&g_System, 0.0001, 0.002f);
-		g_bIsSimulationRunning = false;
+		g_Status.m_bIsSimulationRunning = true;
+		randomizeNodePositions(&g_System, 0.0001f, 0.002f);
+		g_Status.m_bIsSimulationRunning = false;
 		arrangeNodesInContinentLineUsingVectorClass();
 		break;
 	}
@@ -663,25 +830,25 @@ void sortSubmenuAction(int option) {
 void dampingSubmenuAction(int option) {
 	switch (option) {
 	case 1:
-		g_fBaseDampingFactor = 0.97f;
+		g_Config.m_fBaseDampingFactor = 0.97f;
 		break;
 	case 2:
-		g_fBaseDampingFactor = 1.00f;
+		g_Config.m_fBaseDampingFactor = 1.00f;
 		break;
 	case 3:
-		g_fBaseDampingFactor = 0.90f;
+		g_Config.m_fBaseDampingFactor = 0.90f;
 		break;
 	case 4:
-		g_fBaseDampingFactor = 0.75f;
+		g_Config.m_fBaseDampingFactor = 0.75f;
 		break;
 	case 5:
-		g_fBaseDampingFactor = 0.50f;
+		g_Config.m_fBaseDampingFactor = 0.50f;
 		break;
 	case 6:
-		g_fBaseDampingFactor = 0.25f;
+		g_Config.m_fBaseDampingFactor = 0.25f;
 		break;
 	case 7:
-		g_fBaseDampingFactor = 0.01f;
+		g_Config.m_fBaseDampingFactor = 0.01f;
 		break;
 	
 	}
@@ -690,30 +857,32 @@ void dampingSubmenuAction(int option) {
 void processMenuEvents(int option) {
 	switch (option) {
 	case 1: 
-		g_bIsSimulationRunning = false;
+		g_Status.m_bIsSimulationRunning = false;
 		break;
 	case 2:
-		g_bIsSimulationRunning = true;
+		g_Status.m_bIsSimulationRunning = true;
 		break;
 	case 3:
-		g_bIsSimulationRunning = false;
+		g_Status.m_bIsSimulationRunning = false;
 		// initialise the data system and load the data file
 		initSystem(&g_System);
 		parse(g_acFile, parseSection, parseNetwork, parseArc, parsePartition, parseVector);
 		updateArcs(&g_System);
-		g_fSimulationSpeedMultiplier = g_fDefaultSimulationSpeed;
+		g_Config.m_fSimulationSpeedMultiplier = g_Config.m_fDefaultSimulationSpeed;
+		updateCameraToCenterOfMass(&g_System, &g_Camera);
 		break;
 	case 4:
 		randomizeNodePositions(&g_System, 200.0f, 800.0f);
+		updateCameraToCenterOfMass(&g_System, &g_Camera);
+		break; 
+	case 5: // Slow down
+		g_Config.m_fSimulationSpeedMultiplier *= 1.1f;
 		break;
-	case 5: // Speed Up
-		g_fSimulationSpeedMultiplier *= 1.1f;
-		break;
-	case 6: // Slow Down - but do not go above 1.8x multiplier, as it breaks the simulation
-		if (1 / g_fSimulationSpeedMultiplier < 1.8f) g_fSimulationSpeedMultiplier /= 1.1f;
+	case 6: // Speed up - but do not go above 1.8x multiplier, as it breaks the simulation
+		if (1 / g_Config.m_fSimulationSpeedMultiplier < 1.8f) g_Config.m_fSimulationSpeedMultiplier /= 1.1f;
 		break;
 	case 7: // Reset Speed
-		g_fSimulationSpeedMultiplier = g_fDefaultSimulationSpeed;
+		g_Config.m_fSimulationSpeedMultiplier = g_Config.m_fDefaultSimulationSpeed;
 		break;
 	case 8:
 		updateCameraToCenterOfMass(&g_System, &g_Camera);
@@ -760,12 +929,13 @@ void createGLUTMenus() {
 
 void myInit()
 {
-	g_fSimulationKineticEnergy = 0.0f;
 	// setup my event control structure
 	controlInit(g_Control);
 
 	// initalise the maths library
 	initMaths();
+	initConfig();
+	initStatus();
 
 	// Camera setup
 	camInit(g_Camera); // initalise the camera model
@@ -829,6 +999,7 @@ int main(int argc, char* argv[])
 		glutSpecialFunc(sKeyboard);
 		glutSpecialUpFunc(sKeyboardUp);
 		glutMouseFunc(mouse);
+		glutPassiveMotionFunc(hover);
 		glutMotionFunc(motion);
 		createGLUTMenus();
 		glutMainLoop(); // start the rendering loop running, this will only ext when the rendering window is closed 
@@ -877,7 +1048,7 @@ void buildGrid()
 
 void printPause()
 {
-	if (g_bIsSimulationRunning) {
+	if (g_Status.m_bIsSimulationRunning) {
 		printf("Simulation running\n");
 	}
 	else {

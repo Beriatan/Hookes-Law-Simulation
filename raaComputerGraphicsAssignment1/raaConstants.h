@@ -1,6 +1,9 @@
 #pragma once
 #include <string>
 
+
+
+
 //generic
 const static unsigned int csg_uiX = 0;
 const static unsigned int csg_uiY = 1;
@@ -50,3 +53,6 @@ const static float csg_fDisplayListGridMin = -500.0f;
 const static float csg_fDisplayListGridMax = 500.0f;
 const static float csg_fDisplayListGridSpace = 50.0f;
 static unsigned int gs_uiGridDisplayList = 0;
+
+
+

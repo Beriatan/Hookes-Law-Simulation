@@ -24,6 +24,7 @@ typedef struct _raaNode {
     unsigned int m_uiWorldSystem;
     char m_acName[64];
     float m_afAccumulatedForce[3];
+    bool m_bHighlighted;
   
 } raaNode;
 

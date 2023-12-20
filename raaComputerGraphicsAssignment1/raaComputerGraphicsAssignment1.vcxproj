@@ -157,15 +157,25 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Config.cpp" />
+    <ClCompile Include="Graphics.cpp" />
+    <ClCompile Include="Physics.cpp" />
     <ClCompile Include="raaComputerGraphicsAssignment1.cpp" />
     <ClCompile Include="raaConstants.cpp" />
     <ClCompile Include="raaControl.cpp" />
     <ClCompile Include="raaParse.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Config.h" />
+    <ClInclude Include="Graphics.h" />
+    <ClInclude Include="Physics.h" />
     <ClInclude Include="raaConstants.h" />
     <ClInclude Include="raaControl.h" />
     <ClInclude Include="raaParse.h" />
+    <ClInclude Include="resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="raaComputerGraphicsAssignment1.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
