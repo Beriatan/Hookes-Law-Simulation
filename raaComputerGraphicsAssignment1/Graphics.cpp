@@ -21,7 +21,6 @@ extern raaStatus g_Status;
 extern raaCamera g_Camera; // structure holding the camera position and orientation attributes
 
 
-
 GLfloat afColours[][4] = {
 	{1.0f, 0.0f, 0.0f, 1.0f}, // 0 - Red - Africa
 	{0.0f, 1.0f, 0.0f, 1.0f}, // 1 - Green - Asia

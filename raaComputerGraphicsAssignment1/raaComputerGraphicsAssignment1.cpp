@@ -249,7 +249,6 @@ void mouse(int iKey, int iEvent, int iXPos, int iYPos) {
 	}
 }
 
-
 void motion(int iXPos, int iYPos) {
 	if (g_pSelectedNode) {
 		dragNode(iXPos, iYPos);
@@ -259,7 +258,6 @@ void motion(int iXPos, int iYPos) {
 		if (g_Input.m_bMouse || g_Input.m_bMousePan) camInputSetMouseLast(g_Input, iXPos, iYPos);
 	}
 }
-
 
 void hover(int iXPos, int iYPos) {
 	// Near plane
@@ -295,7 +293,6 @@ void hover(int iXPos, int iYPos) {
 	}
 
 }
-
 
 void arrangementSubmenuAction(int option) {
 	switch (option) {
