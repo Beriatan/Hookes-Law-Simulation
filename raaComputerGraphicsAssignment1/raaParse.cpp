@@ -7,9 +7,11 @@
 
 #include "raaConstants.h"
 #include "raaParse.h"
+#include "raaComputerGraphicsAssignment1/Config.h"
 
 
 extern raaSystem g_System;
+extern raaConfig g_Config;
 
 unsigned int g_uiParseMode = 0;
 unsigned int g_uiParseField = 0;
@@ -49,7 +51,7 @@ void parseArc(const char* acRaw, const char* acId0, const char* acId1, const cha
 	raaNode *pN1 = nodeById(&g_System, atoi(acId1));
 	float springCoefficient = (float)atof(acStrength);
 
-	if (pN0 && pN1) addArc(&g_System, initArc(new raaArc, pN0, pN1, springCoefficient, randFloat(100.0f, 500.0f), 100.0f));
+	if (pN0 && pN1) addArc(&g_System, initArc(new raaArc, pN0, pN1, springCoefficient, randFloat(100.0f, 500.0f), randFloat(0.1f, 1.0f)));
 }
 
 void parsePartition(const char* acRaw, const char* acValue) 
@@ -94,24 +96,24 @@ void parseVector(const char* acRaw, const char* acValue)
 }
 
 // Function to update ideal length of arcs
-void updateArcIdealLength(raaArc* pArc) {
+void arcsLengthByContinent(raaArc* pArc) {
 	if (pArc && pArc->m_pNode0 && pArc->m_pNode1) {
 		pArc->m_fIdealLen = (pArc->m_pNode0->m_uiContinent == pArc->m_pNode1->m_uiContinent) ? 200.0f : 400.0f;
 	}
 }
 
-// Function to update non-linear factor of arcs
-void updateArcNonLinearFactor(raaArc* pArc) {
+// Function to update non-linear factor of arcs. This means that depeding on how heavy it is, the spring will get tighter with more force applied. 
+void applySpringNonLinearFactor(raaArc* pArc) {
 	if (pArc && pArc->m_pNode0 && pArc->m_pNode1) {
 		float totalMass = pArc->m_pNode0->m_fMass + pArc->m_pNode1->m_fMass;
 		pArc->m_fNonLinearFactor = 1.0f / (totalMass + 1.0f); // Avoid division by zero
 	}
 }
 
-// Function to update arc lengths and non-linear factors
-void updateArcs(raaSystem* pSystem) {
-	visitArcs(pSystem, updateArcIdealLength);
-	visitArcs(pSystem, updateArcNonLinearFactor);
+void applyFlatArcLength(raaArc* pArc) {
+	pArc->m_fIdealLen = g_Config.m_fArcLength;
 }
 
-
+void applyRandomArcLength(raaArc* pArc) {
+	pArc->m_fIdealLen = randFloat(g_Config.m_fArcLength, g_Config.m_fMaxArcLength);
+}

@@ -27,7 +27,7 @@ float g_fDirection[3] = { 0.0f,0.0f,0.0f };
 
 
 
-void arrangeNodesInContinentLineUsingVectorClass() {
+void arrangeNodesByContinentInLine() {
 	std::map<unsigned int, std::vector<raaNode*>> continentGroups;
 	float spacing = 50.0f; // Spacing between nodes
 	float continentSpacing = 300.0f; // Spacing between continents
@@ -51,16 +51,14 @@ void arrangeNodesInContinentLineUsingVectorClass() {
 
 void positionNodeInLine(raaNode* pNode, int nodeIndex, float spacing) {
 	float startX = -spacing * nodeIndex / 2.0f;
-	pNode->m_afPosition[0] = startX + nodeIndex * spacing;
-	pNode->m_afPosition[1] = 0.0f; // You can adjust Y and Z as needed
-	pNode->m_afPosition[2] = 0.0f;
+	vecSet(startX + nodeIndex * spacing, 0.0f, 0.0f, pNode->m_afPosition);
 }
+
 
 void applyLineLayout(raaNode* pNode) {
 	if (!pNode) return;
 
-	float spacing = 50.0f; // Spacing between nodes
-	positionNodeInLine(pNode, g_lineNodeIndex++, spacing);
+	positionNodeInLine(pNode, g_lineNodeIndex++, g_Config.m_fNodeSpacingInLine);
 }
 
 void arrangeNodesInLine() {
@@ -86,14 +84,15 @@ void positionNodeInCuboid(raaNode* pNode, int* dimensions, int nodeIndex, float 
 	int y = (nodeIndex / dimensions[0]) % dimensions[1];
 	int z = nodeIndex / (dimensions[0] * dimensions[1]);
 
-	float startX = -(dimensions[0] - 1) * spacing / 2.0f;
-	float startY = -(dimensions[1] - 1) * spacing / 2.0f;
-	float startZ = -(dimensions[2] - 1) * spacing / 2.0f;
+	float startPos[3];
+	vecSet(-(dimensions[0] - 1) * spacing / 2.0f, -(dimensions[1] - 1) * spacing / 2.0f, -(dimensions[2] - 1) * spacing / 2.0f, startPos);
 
-	pNode->m_afPosition[0] = startX + x * spacing;
-	pNode->m_afPosition[1] = startY + y * spacing;
-	pNode->m_afPosition[2] = startZ + z * spacing;
+	float offset[3];
+	vecSet(x * spacing, y * spacing, z * spacing, offset);
+
+	vecAdd(startPos, offset, pNode->m_afPosition);
 }
+
 
 void applyCuboidLayout(raaNode* pNode) {
 	if (!pNode) return;
@@ -101,9 +100,8 @@ void applyCuboidLayout(raaNode* pNode) {
 	int dimensions[3];
 	int totalNodes = count(&(g_System.m_llNodes));
 	calculateCuboidDimensions(totalNodes, dimensions);
-	float spacing = 100.0f; // Spacing between nodes
 
-	positionNodeInCuboid(pNode, dimensions, g_nodeIndex++, spacing);
+	positionNodeInCuboid(pNode, dimensions, g_nodeIndex++, g_Config.m_fNodeSpacingInCube);
 }
 
 void arrangeNodesInCuboid() {
@@ -117,13 +115,11 @@ void randomizeNodePositions(raaSystem* pSystem, float fMinRange, float fMaxRange
 	for (raaLinkedListElement* pElement = head(&(pSystem->m_llNodes)); pElement != NULL; pElement = pElement->m_pNext) {
 		raaNode* pNode = static_cast<raaNode*>(pElement->m_pData);
 		if (pNode) {
-			// Randomize position within the specified range
-			pNode->m_afPosition[0] = randFloat(fMinRange, fMaxRange);
-			pNode->m_afPosition[1] = randFloat(fMinRange, fMaxRange);
-			pNode->m_afPosition[2] = randFloat(fMinRange, fMaxRange);
+			vecRand(fMinRange, fMaxRange, pNode->m_afPosition);
 		}
 	}
 }
+
 
 float calculateTotalKineticEnergy(raaSystem* pSystem) {
 	float totalKineticEnergy = 0.0f;
@@ -152,13 +148,11 @@ static void applyForceToNode(raaNode* pNode, float forceX, float forceY, float f
 	// Base damping factor
 	g_Config.m_fDampingFactor = g_Config.m_fBaseDampingFactor;
 
-	// Define a threshold for kinetic energy
-	float kineticEnergyThreshold = 40000000000000.0f;
 
 	// If kinetic energy is above the threshold, decrease damping exponentially
-	if (g_Status.m_fSimulationKineticEnergy > kineticEnergyThreshold) {
+	if (g_Status.m_fSimulationKineticEnergy > g_Config.m_fKineticEnergyThreshold) {
 		float exponentFactor = 0.05f; // Control how quickly damping decreases
-		g_Config.m_fDampingFactor -= exponentFactor * (g_Status.m_fSimulationKineticEnergy - kineticEnergyThreshold);
+		g_Config.m_fDampingFactor -= exponentFactor * (g_Status.m_fSimulationKineticEnergy - g_Config.m_fKineticEnergyThreshold);
 	}
 
 	// Ensure dampingFactor doesn't go negative

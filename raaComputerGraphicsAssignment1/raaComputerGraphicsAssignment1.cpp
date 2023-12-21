@@ -297,25 +297,32 @@ void hover(int iXPos, int iYPos) {
 }
 
 
-void sortSubmenuAction(int option) {
+void arrangementSubmenuAction(int option) {
 	switch (option) {
 	case 1:
+		g_Config.m_fNodeSpacingInCube = 75.0f;
 		g_Status.m_bIsSimulationRunning = false;
-		arrangeNodesInCuboid(); // Assuming 50 is the desired spacing
+		arrangeNodesInCuboid(); 
 		updateCameraToCenterOfMass(&g_System, &g_Camera);
 		break;
 	case 2:
-		g_Status.m_bIsSimulationRunning = true;
-		randomizeNodePositions(&g_System, 0.0001f, 0.002f);
+		g_Config.m_fNodeSpacingInCube = 200.0f;
 		g_Status.m_bIsSimulationRunning = false;
-		arrangeNodesInLine();
+		arrangeNodesInCuboid();
 		updateCameraToCenterOfMass(&g_System, &g_Camera);
 		break;
 	case 3:
 		g_Status.m_bIsSimulationRunning = true;
 		randomizeNodePositions(&g_System, 0.0001f, 0.002f);
 		g_Status.m_bIsSimulationRunning = false;
-		arrangeNodesInContinentLineUsingVectorClass();
+		arrangeNodesInLine();
+		updateCameraToCenterOfMass(&g_System, &g_Camera);
+		break;
+	case 4:
+		g_Status.m_bIsSimulationRunning = true;
+		randomizeNodePositions(&g_System, 0.0001f, 0.002f);
+		g_Status.m_bIsSimulationRunning = false;
+		arrangeNodesByContinentInLine();
 		updateCameraToCenterOfMass(&g_System, &g_Camera);
 		break;
 	}
@@ -361,7 +368,6 @@ void processMenuEvents(int option) {
 		// initialise the data system and load the data file
 		initSystem(&g_System);
 		parse(g_acFile, parseSection, parseNetwork, parseArc, parsePartition, parseVector);
-		updateArcs(&g_System);
 		g_Config.m_fSimulationSpeedMultiplier = g_Config.m_fDefaultSimulationSpeed;
 		updateCameraToCenterOfMass(&g_System, &g_Camera);
 		break;
@@ -386,13 +392,33 @@ void processMenuEvents(int option) {
 
 }
 
+void arcPropertiesSubmenuAction(int option) {
+	switch (option) {
+	case 1:
+		visitArcs(&g_System, applyRandomArcLength);
+		break;
+	case 2:
+		visitArcs(&g_System, applyFlatArcLength);
+		break;
+	case 3:
+		visitArcs(&g_System, arcsLengthByContinent);
+		break;
+	case 4:
+		visitArcs(&g_System, applySpringNonLinearFactor);
+		break;
+	}
+}
+
 void createGLUTMenus() {
-	// Create a submenu for sorting
-	int sort_submenu_id = glutCreateMenu(sortSubmenuAction);
-	glutAddMenuEntry("Cuboid", 1); // The second parameter is the ID sent to submenuAction
-	glutAddMenuEntry("Line", 2);
-	glutAddMenuEntry("Line By Continent", 3);
-	// Add more entries to the submenu here if needed
+
+	// Node arrangement submenu
+	int arrangement_submenu_id = glutCreateMenu(arrangementSubmenuAction);
+	glutAddMenuEntry("Cuboid", 1); 
+	glutAddMenuEntry("Large Cuboid", 2);
+	glutAddMenuEntry("Line", 3);
+	glutAddMenuEntry("Line By Continent", 4);
+	
+	// Damping submenu
 	int damping_submenu_id = glutCreateMenu(dampingSubmenuAction);
 	glutAddMenuEntry("Default", 1);
 	glutAddMenuEntry("1.00", 2);
@@ -402,8 +428,14 @@ void createGLUTMenus() {
 	glutAddMenuEntry("0.25", 6);
 	glutAddMenuEntry("0.01", 7);
 
+	// Submenu for modification of arcs
+	int arc_properties_submenu_id = glutCreateMenu(arcPropertiesSubmenuAction);
+	glutAddMenuEntry("Random Arc Lengths", 1);
+	glutAddMenuEntry("Equal Arc Lenghths", 2);
+	glutAddMenuEntry("Grouped By Continent", 3);
+	glutAddMenuEntry("Apply Spring Non-Linear Factor", 4); // This means the spring will get tighter with more force
 
-	// Create the main menu
+	// Main Menu
 	int menu_id = glutCreateMenu(processMenuEvents);
 	glutAddMenuEntry("Pause", 1);
 	glutAddMenuEntry("Play", 2);
@@ -413,11 +445,11 @@ void createGLUTMenus() {
 	glutAddMenuEntry("Speed Up", 6);
 	glutAddMenuEntry("Reset Speed", 7);
 	glutAddMenuEntry("Center the camera", 8);
-	glutAddSubMenu("Sort", sort_submenu_id); // Add the submenu to the main menu
+	glutAddSubMenu("Arrange Nodes", arrangement_submenu_id);
+	glutAddSubMenu("Modify Arcs", arc_properties_submenu_id);
 	glutAddSubMenu("Change Damping Force", damping_submenu_id);
 
 
-	// Finally, attach the menu to the right button
 	glutAttachMenu(GLUT_RIGHT_BUTTON);
 }
 
@@ -456,9 +488,6 @@ void myInit()
 	// initialise the data system and load the data file
 	initSystem(&g_System);
 	parse(g_acFile, parseSection, parseNetwork, parseArc, parsePartition, parseVector);
-	
-
-	updateArcs(&g_System);
 
 }
 
@@ -539,3 +568,4 @@ void buildGrid()
 
 	glEndList(); // finish recording the displaylist
 }
+

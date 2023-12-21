@@ -2,7 +2,7 @@
 #include "raaSystem/raaSystem.h"
 
 // Nodes arrangement functions
-void arrangeNodesInContinentLineUsingVectorClass(); // Arranges all nodes on a line, grouped by continent
+void arrangeNodesByContinentInLine(); // Arranges all nodes on a line, grouped by continent
 void arrangeNodesInLine(); // Arranges all nodes to be placed in a line 
 void arrangeNodesInCuboid(); //Arranbges all nodes into a cuboid shape
 void randomizeNodePositions(raaSystem* pSystem, float fMinRange, float fMaxRange); // Randomises all node positions

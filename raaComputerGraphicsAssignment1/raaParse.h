@@ -5,9 +5,10 @@ void parseNetwork(const char* acRaw, const char* acId, const char* acName, const
 void parseArc(const char* acRaw, const char* acId0, const char* acId1, const char* acStrength);
 void parsePartition(const char* acRaw, const char* acValue);
 void parseVector(const char* acRaw, const char* acValue);
-void updateArcNonLinearFactor(raaArc* pArc);
-void updateArcIdealLength(raaArc* pArc);
-void updateArcs(raaSystem* pSystem);
+void applySpringNonLinearFactor (raaArc* pArc);
+void arcsLengthByContinent(raaArc* pArc);
+void applyFlatArcLength(raaArc* pArc);
+void applyRandomArcLength(raaArc* pArc);
 
 
 
